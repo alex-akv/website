@@ -180,6 +180,9 @@ It creates the following resources. For more information such as resource names 
 
    3.2. Make agent search its memory, for example by prompting "What are my plans for next month?":
 
+   >[!NOTE]
+   >First use of the mem0 may take a few seconds for the database to be ready.
+
    ![alt_text](search-in-memory.png)
 
    The agent should find previously saved information by using the `search_memory` tool.

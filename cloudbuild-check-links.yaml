@@ -14,9 +14,10 @@
 
 
 steps:
-  - name: gcr.io/cloud-builders/gsutil
+  - name: gcr.io/cloud-builders/gcloud
     allowFailure: true
-    args: ['cp', 'gs://ai-on-gke-website-htmltest-cache/.lycheecache', '.lycheecache']
+    entrypoint: gcloud
+    args: ['storage', 'cp', 'gs://ai-on-gke-website-htmltest-cache/.lycheecache', '.lycheecache']
   - name: 'ghcr.io/hugomods/hugo:ci-0.145.0'
     env:
       - GOPATH=/workspace/go
@@ -38,8 +39,9 @@ steps:
         echo "fail" > /workspace/lychee_status
         lychee site/public -c lychee.toml
         echo "pass" > /workspace/lychee_status
-  - name: gcr.io/cloud-builders/gsutil
-    args: ['cp', '.lycheecache', 'gs://ai-on-gke-website-htmltest-cache/.lycheecache']
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: gcloud
+    args: ['storage', 'cp', '.lycheecache', 'gs://ai-on-gke-website-htmltest-cache/.lycheecache']
   - name: bash
     script: | 
       #!/usr/bin/env bash

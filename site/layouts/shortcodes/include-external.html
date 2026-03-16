@@ -2,7 +2,10 @@
 {{ $branch := .Page.Params.externalSource.branch }}
 {{ $repository := .Page.Params.externalSource.repository }}
 
-{{ $folderPath := replaceRE `/[^/]*$` "" $filePath }}
+{{ $folderPrefix := "/" }}
+{{ if ne (path.Dir $filePath) "." }}
+{{ $folderPrefix = printf "/%s/" (path.Dir $filePath) }}
+{{ end }}
 
 {{ $url := printf "https://raw.githubusercontent.com/%s/%s/%s" $repository $branch $filePath }}
 
@@ -14,12 +17,24 @@
 {{ errorf "%s" . }}
 {{ else with .Value }}
 
-{{ $newContent := replaceRE `\]\((\.\/|\b[^:][^\/][^\/]\b)(.*?)\)` (printf "](https://github.com/%s/blob/%s/%s/%s)" $repository $branch $folderPath "${2}") .Content }}
-{{ $newContent := replaceRE `(\]\(([A-Za-z0-9]*\.[a-z]+))` (printf "](https://github.com/%s/blob/%s/%s/%s" $repository $branch $folderPath "${2}") $newContent }}
+{{ $newContent := .Content }}
 
-{{ $newContent := replaceRE `\[<img.*src=".*\/(.*\.[a-z]*)".*>\]\((.*)\)` (printf "![%s](images/%s)" "${2}" "${1}") $newContent }}
+{{/* Fix for malformed HTML image links occasionally found in source markdown */}}
+{{ $newContent = replaceRE `\[<img.*src=".*\/(.*\.[a-z]*)".*>\]\((.*)\)` (printf "![${2}](images/${1})") $newContent }}
 
-{{ $newContent | safeHTML}}
+{{/* 1. Absolute Images (starting with /) */}}
+{{ $newContent = replaceRE `\!\[([^\]]*)\]\((/[^:\)]+)(#[^\)]*)?\)` (printf "![${1}](https://raw.githubusercontent.com/%s/%s${2}${3})" $repository $branch) $newContent }}
+
+{{/* 2. Relative Images */}}
+{{ $newContent = replaceRE `\!\[([^\]]*)\]\(([^/:#\)][^:#\)]*)(#[^\)]*)?\)` (printf "![${1}](https://raw.githubusercontent.com/%s/%s%s${2}${3})" $repository $branch $folderPrefix) $newContent }}
+
+{{/* 3. Absolute Links */}}
+{{ $newContent = replaceRE `\]\((/[^:\)]+)(#[^\)]*)?\)` (printf "](https://github.com/%s/blob/%s${1}${2})" $repository $branch) $newContent }}
+
+{{/* 4. Relative Links */}}
+{{ $newContent = replaceRE `\]\(([^/:#\)][^:#\)]*)(#[^\)]*)?\)` (printf "](https://github.com/%s/blob/%s%s${1}${2})" $repository $branch $folderPrefix) $newContent }}
+
+{{ $newContent | safeHTML }}
 
 {{ end }}
 {{ else }}
